@@ -1,139 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { useLocalStorage } from './hooks/useLocalStorage'
-import { extractReelId, isValidInstagramUrl, generateThumbnailUrl } from './utils/instagram'
-import Header from './components/Header'
-import CategoryBar from './components/CategoryBar'
-import BookmarkCard from './components/BookmarkCard'
-import AddEditModal from './components/AddEditModal'
-import EmptyState from './components/EmptyState'
-
-/**
- * Parse shared content from the URL params (Web Share Target API).
- * Instagram typically shares the reel URL inside the "text" param.
- * Sometimes it comes as just the URL, sometimes wrapped in text like "Check this out: https://..."
- */
-function getSharedUrl() {
-  const params = new URLSearchParams(window.location.search)
-  
-  // No query params at all — nothing shared
-  if (!window.location.search) return null
-
-  // Try the url param first
-  const url = params.get('url') || ''
-  if (isValidInstagramUrl(url)) return url
-
-  // Instagram often puts the link in the "text" param
-  const text = params.get('text') || ''
-  const urlMatch = text.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
-  if (urlMatch) return urlMatch[0]
-
-  // Sometimes it's in the title
-  const title = params.get('title') || ''
-  const titleMatch = title.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
-  if (titleMatch) return titleMatch[0]
-
-  // Last resort: check all param values for an instagram URL
-  for (const [, value] of params) {
-    const match = value.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
-    if (match) return match[0]
-  }
-
-  return null
-}
-
-export default function App() {
-  const [bookmarks, setBookmarks] = useLocalStorage('reel-bookmarks', [])
-  const [categories, setCategories] = useLocalStorage('reel-categories', ['Uncategorized', 'Funny', 'Recipes', 'Travel', 'Fitness'])
-  const [activeCategory, setActiveCategory] = useState('All')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingBookmark, setEditingBookmark] = useState(null)
-  const [sharedUrl, setSharedUrl] = useState(null)
-
-  // Handle incoming share target
-  useEffect(() => {
-    const url = getSharedUrl()
-    if (url) {
-      setSharedUrl(url)
-      setIsModalOpen(true)
-      // Clean up the URL so it doesn't re-trigger
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const filteredBookmarks = useMemo(() => {
-    let filtered = bookmarks
-    if (activeCategory !== 'All') {
-      filtered = filtered.filter(b => b.category === activeCategory)
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      filtered = filtered.filter(b =>
-        b.title.toLowerCase().includes(q) ||
-        b.description.toLowerCase().includes(q) ||
-        b.url.toLowerCase().includes(q)
-      )
-    }
-    return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  }, [bookmarks, activeCategory, searchQuery])
-
-  const handleAddBookmark = (formData) => {
-    const newBookmark = {
-      id: crypto.randomUUID(),
-      ...formData,
-      reelId: extractReelId(formData.url),
-      createdAt: new Date().toISOString(),
-    }
-    setBookmarks(prev => [newBookmark, ...prev])
-  }
-
-  const handleEditBookmark = (formData) => {
-    setBookmarks(prev =>
-      prev.map(b =>
-        b.id === editingBookmark.id
-          ? { ...b, ...formData, updatedAt: new Date().toISOString() }
-          : b
-      )
-    )
-    setEditingBookmark(null)
-  }
-
-  const handleDeleteBookmark = (id) => {
-    if (window.confirm('Delete this bookmark?')) {
-      setBookmarks(prev => prev.filter(b => b.id !== id))
-    }
-  }
-
-  const handleAddCategory = (name) => {
-    setCategories(prev => [...prev, name])
-  }
-
-  const handleDeleteCategory = (name) => {
-    if (window.confirm(`Delete category "${name}"? Bookmarks in this category will be moved to "Uncategorized".`)) {
-      setCategories(prev => prev.filter(c => c !== name))
-      setBookmarks(prev =>
-        prev.map(b => b.category === name ? { ...b, category: 'Uncategorized' } : b)
-      )
-      if (activeCategory === name) setActiveCategory('All')
-    }
-  }
-
-  const openEditModal = (bookmark) => {
-    setEditingBookmark(bookmark)
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setEditingBookmark(null)
-    setSharedUrl(null)
-  }
-
-  return (
+return (
     <div className="min-h-screen bg-gray-50">
       <Header
         onAddClick={() => setIsModalOpen(true)}
-        bookmarkCount={bookmarks.length}
+        bookmarkCount={filteredBookmarks.length}
+        activeCategory={activeCategory}
       />
 
       <CategoryBar
@@ -178,7 +48,7 @@ export default function App() {
             hasFilter={activeCategory !== 'All' || searchQuery.trim() !== ''}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 sm:gap-3">
             {filteredBookmarks.map(bookmark => (
               <BookmarkCard
                 key={bookmark.id}
@@ -202,4 +72,3 @@ export default function App() {
       />
     </div>
   )
-}
