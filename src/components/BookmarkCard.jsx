@@ -8,10 +8,10 @@ export default function BookmarkCard({ bookmark, onEdit, onDelete }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group w-[300px]">
+    <div className="bg-white rounded-none sm:rounded-xl shadow-none sm:shadow-sm border-0 sm:border sm:border-gray-200 overflow-hidden hover:shadow-md transition-shadow group">
       {/* Thumbnail */}
       <div
-        className="relative h-[350px] overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 cursor-pointer"
+        className="relative aspect-square overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 cursor-pointer"
         onClick={handleOpen}
       >
         {bookmark.thumbnailUrl && !imgError ? (
@@ -56,7 +56,7 @@ export default function BookmarkCard({ bookmark, onEdit, onDelete }) {
       </div>
 
       {/* Content */}
-      <div className="p-3">
+      <div className="hidden sm:block p-3">
         <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{bookmark.title || 'Untitled Reel'}</h3>
         {bookmark.description && (
           <p className="text-gray-500 text-xs mt-1 line-clamp-2">{bookmark.description}</p>

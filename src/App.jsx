@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import { extractReelId, isValidInstagramUrl, generateThumbnailUrl } from './utils/instagram'
+import { extractReelId, isValidInstagramUrl, generateThumbnailUrl, fetchInstagramThumbnail } from './utils/instagram'
 import Header from './components/Header'
 import CategoryBar from './components/CategoryBar'
 import BookmarkCard from './components/BookmarkCard'
@@ -77,10 +77,22 @@ export default function App() {
     return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   }, [bookmarks, activeCategory, searchQuery])
 
-  const handleAddBookmark = (formData) => {
+  const handleAddBookmark = async (formData) => {
+    // Try to get the real Instagram thumbnail
+    let thumbnailUrl = formData.thumbnailUrl
+    if (!thumbnailUrl || thumbnailUrl.includes('thum.io')) {
+      const realThumb = await fetchInstagramThumbnail(formData.url)
+      if (realThumb) {
+        thumbnailUrl = realThumb
+      } else {
+        thumbnailUrl = thumbnailUrl || generateThumbnailUrl(formData.url)
+      }
+    }
+
     const newBookmark = {
       id: crypto.randomUUID(),
       ...formData,
+      thumbnailUrl,
       reelId: extractReelId(formData.url),
       createdAt: new Date().toISOString(),
     }
@@ -133,7 +145,8 @@ export default function App() {
     <div className="min-h-screen bg-gray-50">
       <Header
         onAddClick={() => setIsModalOpen(true)}
-        bookmarkCount={bookmarks.length}
+        bookmarkCount={filteredBookmarks.length}
+        activeCategory={activeCategory}
       />
 
       <CategoryBar
@@ -178,7 +191,7 @@ export default function App() {
             hasFilter={activeCategory !== 'All' || searchQuery.trim() !== ''}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 sm:gap-3">
             {filteredBookmarks.map(bookmark => (
               <BookmarkCard
                 key={bookmark.id}

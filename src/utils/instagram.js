@@ -36,16 +36,43 @@ export function isValidInstagramUrl(url) {
 }
 
 /**
- * Generate a thumbnail URL for an Instagram reel using screenshot services.
- * Uses thum.io which is free, no-auth, and returns images directly via URL.
- * The URL can be used as an <img> src directly.
+ * Generate a thumbnail URL for an Instagram reel.
+ * Returns the thum.io screenshot URL as a fallback placeholder.
  */
 export function generateThumbnailUrl(url) {
   if (!url) return null
-  // thum.io: free screenshot service, no API key needed.
-  // Width 480 is good for card thumbnails.
   const encoded = encodeURIComponent(url)
   return `https://image.thum.io/get/width/480/crop/850/${encoded}`
+}
+
+/**
+ * Try to fetch the actual Instagram thumbnail via noembed.com (CORS-friendly oEmbed proxy).
+ * Returns a promise that resolves to the thumbnail URL or null.
+ */
+export async function fetchInstagramThumbnail(url) {
+  // Try noembed.com - a free CORS-friendly oEmbed aggregator
+  try {
+    const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data.thumbnail_url) return data.thumbnail_url
+    }
+  } catch {
+    // noembed failed
+  }
+
+  // Try iframe.ly as another CORS-friendly option
+  try {
+    const response = await fetch(`https://open.iframe.ly/api/oembed?url=${encodeURIComponent(url)}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data.thumbnail_url) return data.thumbnail_url
+    }
+  } catch {
+    // iframely failed
+  }
+
+  return null
 }
 
 /**

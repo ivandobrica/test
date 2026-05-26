@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function Header({ onAddClick, bookmarkCount }) {
+export default function Header({ onAddClick, bookmarkCount, activeCategory }) {
   return (
     <header className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -10,7 +10,9 @@ export default function Header({ onAddClick, bookmarkCount }) {
           </svg>
           <div>
             <h1 className="text-xl font-bold">Reel Bookmarks</h1>
-            <p className="text-xs text-white/80">{bookmarkCount} saved reels</p>
+            <p className="text-xs text-white/80">
+              {bookmarkCount} {bookmarkCount === 1 ? 'reel' : 'reels'}{activeCategory !== 'All' ? ` in ${activeCategory}` : ''}
+            </p>
           </div>
         </div>
         <button

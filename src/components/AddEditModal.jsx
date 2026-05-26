@@ -256,12 +256,12 @@ export default function AddEditModal({ isOpen, onClose, onSave, bookmark, catego
 
             {/* Preview */}
             {formData.thumbnailUrl && (
-              <div className="mb-3 relative rounded-lg overflow-hidden bg-gray-100 h-36 w-24">
+              <div className="mb-3 relative rounded-lg overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 h-36 w-24">
                 <img
                   src={formData.thumbnailUrl}
                   alt="Thumbnail preview"
                   className="absolute inset-0 w-full h-full object-cover object-center"
-                  onError={(e) => { e.target.src = ''; e.target.alt = 'Failed to load' }}
+                  onError={(e) => { e.target.style.display = 'none' }}
                 />
                 <button
                   type="button"
