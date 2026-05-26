@@ -10,23 +10,33 @@ import EmptyState from './components/EmptyState'
 /**
  * Parse shared content from the URL params (Web Share Target API).
  * Instagram typically shares the reel URL inside the "text" param.
+ * Sometimes it comes as just the URL, sometimes wrapped in text like "Check this out: https://..."
  */
 function getSharedUrl() {
   const params = new URLSearchParams(window.location.search)
-  if (!params.has('share-target')) return null
+  
+  // No query params at all — nothing shared
+  if (!window.location.search) return null
 
-  // Try the url param first, then extract from text
-  const url = params.get('url')
-  if (url && isValidInstagramUrl(url)) return url
+  // Try the url param first
+  const url = params.get('url') || ''
+  if (isValidInstagramUrl(url)) return url
 
+  // Instagram often puts the link in the "text" param
   const text = params.get('text') || ''
-  // Instagram share text often contains the URL mixed with other text
-  const urlMatch = text.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s]+/)
+  const urlMatch = text.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
   if (urlMatch) return urlMatch[0]
 
+  // Sometimes it's in the title
   const title = params.get('title') || ''
-  const titleMatch = title.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s]+/)
+  const titleMatch = title.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
   if (titleMatch) return titleMatch[0]
+
+  // Last resort: check all param values for an instagram URL
+  for (const [, value] of params) {
+    const match = value.match(/https?:\/\/(www\.)?instagram\.com\/(reel|p)\/[^\s?]+/)
+    if (match) return match[0]
+  }
 
   return null
 }
